@@ -1,15 +1,18 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL?.trim();
 const TOKEN_KEY = 'task_manager_token';
 
 export const api = axios.create({
-  baseURL: API_URL.replace(/\/+$/, ''),
+  baseURL: API_URL?.replace(/\/+$/, ''),
   headers: { 'Content-Type': 'application/json' },
   timeout: 10000,
 });
 
 api.interceptors.request.use((config) => {
+  if (!API_URL) {
+    return Promise.reject(new Error('VITE_API_URL is not configured. Set it to the deployed API base URL.'));
+  }
   const token = localStorage.getItem(TOKEN_KEY);
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
@@ -41,6 +44,9 @@ export const tasksApi = {
 };
 
 export function getErrorMessage(error) {
+  if (error.message?.includes('VITE_API_URL is not configured')) {
+    return error.message;
+  }
   if (!error.response) {
     return 'Could not reach the Task Manager API. Check that the backend is running and VITE_API_URL is correct.';
   }

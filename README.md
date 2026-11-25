@@ -42,7 +42,9 @@ From this directory:
 
 ```powershell
 npm install
+npm run build
 Copy-Item .env.example .env
+# Set VITE_API_URL=http://localhost:5000/api in .env for local development.
 npm run dev
 ```
 
@@ -50,7 +52,7 @@ Vite prints the local frontend URL (normally `http://localhost:5173`). Create a 
 
 ## Backend setup
 
-Set up PostgreSQL and the API as described in `../task-manager-api/README.md`. In a separate terminal:
+Set up PostgreSQL and the API as described in the [backend repository](https://github.com/sivaadithya25/task-manager-api). In a separate terminal:
 
 ```powershell
 cd ..\task-manager-api
@@ -68,10 +70,27 @@ The API's default CORS origins now include `http://localhost:3000` and Vite's `h
 `.env.example` contains:
 
 ```dotenv
-VITE_API_URL=http://localhost:5000/api
+VITE_API_URL=https://YOUR-BACKEND-URL.onrender.com/api
 ```
 
-Vite reads `VITE_API_URL` from `.env` at startup. The Axios client uses this one base URL for all requests. Do not expose server secrets in Vite environment variables; frontend variables are public in the built application.
+Vite reads `VITE_API_URL` from `.env` at startup/build time. Set the local value to `http://localhost:5000/api` for local development; set the actual HTTPS Render API URL in Vercel project settings. The Axios client uses this one base URL for all requests and displays a configuration error if it is missing. Do not expose server secrets in Vite environment variables; frontend variables are public in the built application. Production source contains no localhost API fallback.
+
+## Production deployment
+
+Deployment status: no public Vercel or Render URL is configured yet. Record the actual platform-assigned URLs here after deployment is confirmed:
+
+- Public frontend URL: not deployed yet
+- Backend API base URL: `https://YOUR-BACKEND-URL.onrender.com/api`
+
+### Vercel
+
+This repository is configured for Vercel's Vite preset. Import `sivaadithya25/task-manager-frontend` into Vercel and set the project root to the repository root. Use build command `npm run build` and output directory `dist`. Add `VITE_API_URL` with the deployed Render API URL ending in `/api`, then deploy. `vercel.json` rewrites frontend paths to `index.html` so React Router routes continue to work after refresh. Set the final Vercel production origin as the API's Render `CLIENT_URL` or include it in `CORS_ORIGIN`.
+
+### Render API
+
+Deploy `sivaadithya25/task-manager-api` as a Render Web Service with build command `npm install` and start command `npm start`. Create a Render PostgreSQL instance and configure `DATABASE_URL`, `NODE_ENV=production`, `JWT_SECRET`, and `CLIENT_URL` in the Render service environment. Initialize the hosted database with the API repository's `database/schema.sql`. See the backend [deployment and database setup](https://github.com/sivaadithya25/task-manager-api#render-deployment) for environment variable details and health checks.
+
+The public Vercel URL, Render API URL, and hosted PostgreSQL status are not known until those services are created and deployed; do not infer a successful deployment from a local build.
 
 ## API contract
 
@@ -95,23 +114,20 @@ Supported task statuses are `pending`, `in_progress`, and `completed`. An Axios 
 npm run build
 ```
 
-The build checks production compilation. Full authentication and CRUD integration checks require the API and PostgreSQL to be running with a configured database and a registered user. When the API is stopped, API-driven screens show a connection error and a retry action rather than failing silently.
+The build checks production compilation. Full authentication and CRUD integration checks require the API and PostgreSQL to be running with a configured database and a registered user. When the API is stopped, API-driven screens show a connection error and a retry action rather than failing silently. After deployment, test registration, login, protected task CRUD, page refreshes on nested routes, CORS, and task ownership using two separate users.
 
 ## Screenshots
 
 Add screenshots of the dashboard, task details, and mobile layout here after launching with a configured backend.
 
-## Publish as a separate GitHub repository
+## GitHub repository
 
-Create a public GitHub repository named `task-manager-frontend`, then run these commands from this folder after reviewing the files:
+This frontend is maintained in [sivaadithya25/task-manager-frontend](https://github.com/sivaadithya25/task-manager-frontend). `.env` is ignored and must never be committed.
+
+For future updates:
 
 ```powershell
-git init
 git add .
-git commit -m "Build responsive Task Manager frontend"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/task-manager-frontend.git
+git commit -m "Describe frontend change"
 git push -u origin main
 ```
-
-Do not commit `.env`; `.gitignore` excludes it. The project is prepared for publishing but has not been pushed.
